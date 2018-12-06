@@ -6,5 +6,6 @@
 			http://www.springframework.org/schema/beans/spring-beans.xsd" >
 	
 	<import resource="applicationContext-core.xml"/>
+	<import resource="applicationContext-persistence.xml"/>
 	
 </beans>
