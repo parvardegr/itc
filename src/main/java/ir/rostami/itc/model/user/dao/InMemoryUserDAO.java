@@ -1,20 +1,22 @@
-package ir.rostami.itc.model.user;
+package ir.rostami.itc.model.user.dao;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class UsersHolder {
-	private static UsersHolder instance;
+import ir.rostami.itc.model.user.User;
+
+public class InMemoryUserDAO {
+	private static InMemoryUserDAO instance;
 	private Map<String, User> users;
 	
-	public static UsersHolder getInstance() {
+	public static InMemoryUserDAO getInstance() {
 		if(instance == null) {
-			instance = new UsersHolder();
+			instance = new InMemoryUserDAO();
 		}
 		return instance;
 	}
 	
-	public UsersHolder() {
+	public InMemoryUserDAO() {
 		initPreRegisterUsers();
 	}
 

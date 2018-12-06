@@ -7,6 +7,7 @@ public class User {
 	private String token;
 	private String ownedDir;
 	private Map<String, String> allowedDirs;
+	private boolean isAuthenticated;
 
 	public String getUsername() {
 		return username;
@@ -38,5 +39,13 @@ public class User {
 
 	public void setAllowedDirs(Map<String, String> allowedDirs) {
 		this.allowedDirs = allowedDirs;
+	}
+	
+	public boolean isAuthenticated() {
+		return isAuthenticated;
+	}
+	
+	public void setAuthenticated(boolean isAuthenticated) {
+		this.isAuthenticated = isAuthenticated;
 	}
 }

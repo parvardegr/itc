@@ -1,5 +1,6 @@
 package ir.rostami.itc.api.file;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
@@ -17,9 +18,11 @@ import org.apache.commons.io.IOUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ir.rostami.itc.core.auth.UsernameTokenAuthenticatorManager;
 import ir.rostami.itc.core.file_system.FileSystemManager;
 import ir.rostami.itc.model.RequestMethods;
 import ir.rostami.itc.model.file.NativeFile;
+import ir.rostami.itc.model.user.User;
 
 @WebServlet("/")
 public class FileServlet extends HttpServlet {
@@ -27,6 +30,12 @@ public class FileServlet extends HttpServlet {
 
 	@Override
 	protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		User user = authenticate(request);
+		if(user == null || !user.isAuthenticated()) {
+			response.setStatus(401);
+			return;
+		}
+		
 		String method = RequestMethods.resolveRequestMethod(request);
 		if(method == null) {
 			method = "NOT-SUPPORT";
@@ -34,22 +43,22 @@ public class FileServlet extends HttpServlet {
 		
 		switch (method) {
 		case RequestMethods.GET:
-			doGet_(request, response);
+			doGet_(user, request, response);
 			return;
 		case RequestMethods.PUT:
-			doPut_(request, response);
+			doPut_(user, request, response);
 			return;
 		case RequestMethods.COPY:
-			doCopy(request, response);
+			doCopy(user, request, response);
 			return;
 		case RequestMethods.LIST:
-			doList(request, response);
+			doList(user, request, response);
 			return;
 		case RequestMethods.DELETE:
-			doDelete_(request, response);
+			doDelete_(user, request, response);
 			return;
 		case RequestMethods.MKDIR:
-			doMkdir(request, response);
+			doMkdir(user, request, response);
 			return;
 		default:
 			response.setStatus(404);
@@ -57,15 +66,24 @@ public class FileServlet extends HttpServlet {
 		}
 	}
 	
+	private User authenticate(HttpServletRequest request) {
+		String token = request.getHeader("Token");
+		String username = request.getHeader("Username");
+		if(token == null || username == null) {
+			return null;
+		}
+		return UsernameTokenAuthenticatorManager.authenticate(username, token);
+	}
+
 	private String resolveUrl(HttpServletRequest request) {
 		return request.getHeader("Url");
 	}
 	
-	private void doMkdir(HttpServletRequest request, HttpServletResponse response) {
+	private void doMkdir(User user, HttpServletRequest request, HttpServletResponse response) {
 		String directoryUrl = resolveUrl(request);
 		
 		try {
-			FileSystemManager.createDirectory(directoryUrl);
+			FileSystemManager.mkdir(user, directoryUrl);
 		} catch (IOException e) {
 			e.printStackTrace();
 			response.setStatus(500);
@@ -75,11 +93,11 @@ public class FileServlet extends HttpServlet {
 		response.setStatus(202);
 	}
 
-	private void doDelete_(HttpServletRequest request, HttpServletResponse response) {
+	private void doDelete_(User user, HttpServletRequest request, HttpServletResponse response) {
 		String directoryUrl = resolveUrl(request);
 		
 		try {
-			FileSystemManager.deleteFile(directoryUrl);
+			FileSystemManager.delete(user, directoryUrl);
 		} catch (IOException e) {
 			e.printStackTrace();
 			response.setStatus(500);
@@ -89,21 +107,35 @@ public class FileServlet extends HttpServlet {
 		response.setStatus(202);
 	}
 
-	private void doList(HttpServletRequest request, HttpServletResponse response) throws IOException {
+	private void doList(User user, HttpServletRequest request, HttpServletResponse response) throws IOException {
 		String directoryUrl = resolveUrl(request);
 		
-		List<NativeFile> list = FileSystemManager.list(directoryUrl);
+		List<NativeFile> list = FileSystemManager.list(user, directoryUrl);
 		
 		response.setCharacterEncoding("UTF-8");
 		response.setStatus(200);
 		response.getWriter().print(new ObjectMapper().writeValueAsString(list));
 	}
 
-	private void doCopy(HttpServletRequest request, HttpServletResponse response) {
-		// TODO Auto-generated method stub
+	private void doCopy(User user, HttpServletRequest request, HttpServletResponse response) {
+		String urlSource = request.getHeader("source-url");
+		String urlDest = request.getHeader("dest-url");
+		try {
+			FileSystemManager.copy(user, urlSource, urlDest);
+			
+			response.setStatus(202);
+		} catch(FileNotFoundException fnfe) {
+			response.setStatus(404);
+			return;
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			response.setStatus(500);
+			return;
+		}
 	}
 
-	private void doPut_(HttpServletRequest request, HttpServletResponse response) {
+	private void doPut_(User user, HttpServletRequest request, HttpServletResponse response) {
 		String url = resolveUrl(request);
 		
 		ServletInputStream dataInputStream;
@@ -114,7 +146,7 @@ public class FileServlet extends HttpServlet {
 			//if(hasUpdateAccess) {
 			//	Files.addOrUpdate(Paths.get(url), data);
 			//} else {
-			FileSystemManager.add(data, url);
+			FileSystemManager.add(user, url, data);
 			//}
 		} catch(FileAlreadyExistsException fae) {
 			response.setStatus(401);
@@ -128,11 +160,11 @@ public class FileServlet extends HttpServlet {
 		response.setStatus(202);
 	}
 
-	private void doGet_(HttpServletRequest request, HttpServletResponse response) {
+	private void doGet_(User user, HttpServletRequest request, HttpServletResponse response) {
 		String url = resolveUrl(request);
 		
 		try {
-			byte[] data = FileSystemManager.get(url);
+			byte[] data = FileSystemManager.get(user, url);
 			
 			//response.setContentType(type);
 			String fileName = FilenameUtils.getName(url);
@@ -140,7 +172,7 @@ public class FileServlet extends HttpServlet {
 			response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
 			response.setContentLength(data.length);
 			
-			String contentType = FileSystemManager.getContentType(url);
+			String contentType = FileSystemManager.getContentType(user, url);
 			response.setContentType(contentType);
 			
 			response.setStatus(200);

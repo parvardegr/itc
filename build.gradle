@@ -7,9 +7,6 @@ project.webAppDirName = 'src/main/webapp'
 
 repositories {
 	mavenLocal()
-//	maven {
-//		url "http://maven.viradev.ir/repository/cache/"
-//	}
 	mavenCentral()
 	jcenter()
 }
@@ -40,5 +37,6 @@ dependencies {
 	
 	// apache
 	compile 'commons-io:commons-io:2.4'
+	compile group: 'commons-codec', name: 'commons-codec', version: '1.11'
 }
 
