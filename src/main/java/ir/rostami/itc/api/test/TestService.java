@@ -6,6 +6,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 import ir.rostami.itc.api.service.JsonService;
+import ir.rostami.itc.core.spring.ApplicationContextUtil;
 
 @Path("test")
 public class TestService extends JsonService {
@@ -13,6 +14,6 @@ public class TestService extends JsonService {
 	@GET
 	@Produces(MediaType.TEXT_PLAIN)
 	public String testPlainText() {
-		return "test service from itc project!!!";
+		return ApplicationContextUtil.getProperty("project.name");
 	}
 }

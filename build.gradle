@@ -25,7 +25,8 @@ dependencies {
     compile 'javax.servlet:javax.servlet-api:4.0.0-b07'
     
     // jersey
-    compile 'org.glassfish.jersey.containers:jersey-container-servlet:2.25.1'
-    compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.25.1'
+    compile 'org.glassfish.jersey.containers:jersey-container-servlet:2.26'
+    compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.26'
+    compile 'org.glassfish.jersey.ext:jersey-spring4:2.26'
 }
 
